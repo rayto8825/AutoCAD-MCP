@@ -59,6 +59,10 @@ ipc/
 # User-specific configuration
 claude_desktop_config.json
 
+# Private CAD training corpora and derived project data
+/local-learning/cad-training/
+/skills/industrial-product-design-gbt/local-learning/cad-training/
+
 # Local test files
 test_*.dwg
 temp_*.lsp

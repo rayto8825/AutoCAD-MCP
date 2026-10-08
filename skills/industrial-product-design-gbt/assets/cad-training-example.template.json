@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "example_id": "EXAMPLE-0001",
+  "project_group": "LOCAL-PROJECT-GROUP-01",
+  "system": "floor_plan",
+  "task": "根据已审查的平面图样例，说明墙体、家具和尺寸应如何分层，并指出需从项目模板核实的内容。",
+  "evidence": {
+    "source_kind": "dwg",
+    "source_ref": "LOCAL-REF-0001",
+    "observations": ["样例以毫米为单位", "墙体与家具分别使用语义图层"],
+    "units": "mm",
+    "layout_or_view": "模型空间平面图",
+    "layer_roles": [
+      {"layer": "墙体", "role": "墙体轮廓", "confidence": "observed"},
+      {"layer": "家具", "role": "家具与设备", "confidence": "observed"},
+      {"layer": "YQ_DIM", "role": "通用尺寸（需核对当前项目是否有专业尺寸层）", "confidence": "observed"}
+    ],
+    "dimension_text_plot_notes": ["DIMSCALE 需从当前模板读取，不得套用其他项目数值"],
+    "exceptions": []
+  },
+  "answer": "墙体轮廓放在墙体层，家具与设备放在家具层。尺寸按模板的专业尺寸习惯分配；YQ_DIM 是常见通用尺寸层，但仍需检查当前项目是否将专业尺寸放在对应系统层。绘制前读取当前模板的单位、DIMSCALE、文字样式和布局打印设置。",
+  "review": {
+    "status": "pending",
+    "reviewer_basis": "由制图人员对照源图和项目模板复核后填写",
+    "correction_summary": null
+  },
+  "privacy": {
+    "contains_client_data": false,
+    "may_leave_local_machine": false,
+    "rights_checked": false,
+    "redactions": []
+  },
+  "messages": [
+    {"role": "user", "content": "根据已审查的平面图样例，说明墙体、家具和尺寸应如何分层，并指出需从项目模板核实的内容。"},
+    {"role": "assistant", "content": "墙体轮廓放在墙体层，家具与设备放在家具层。尺寸按模板的专业尺寸习惯分配；YQ_DIM 是常见通用尺寸层，但仍需检查当前项目是否将专业尺寸放在对应系统层。绘制前读取当前模板的单位、DIMSCALE、文字样式和布局打印设置。"}
+  ]
+}

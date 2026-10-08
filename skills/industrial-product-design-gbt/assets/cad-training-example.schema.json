@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/autocad-mcp/cad-training-example.schema.json",
+  "title": "Private CAD construction drawing instruction example",
+  "description": "One private, normalized supervised fine-tuning example. Keep project-specific values local unless explicitly cleared for release.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "example_id", "project_group", "system", "task", "evidence", "answer", "review", "privacy"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "example_id": {"type": "string", "minLength": 1},
+    "project_group": {"type": "string", "description": "Opaque local group ID; no customer or project name."},
+    "system": {
+      "type": "string",
+      "enum": ["floor_plan", "elevation", "reflected_ceiling", "electrical", "plumbing", "furniture_equipment", "detail", "schedule", "sheet_layout", "integrated_set", "other", "not_available"]
+    },
+    "task": {"type": "string", "minLength": 1},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_kind", "source_ref", "observations"],
+      "properties": {
+        "source_kind": {"type": "string", "enum": ["dwg", "dxf", "pdf", "image", "user_correction", "generalized_rule"]},
+        "source_ref": {"type": "string", "description": "Opaque local ID or private-local path; do not expose a client-identifying path in shareable corpora."},
+        "observations": {"type": "array", "items": {"type": "string"}},
+        "units": {"type": ["string", "null"]},
+        "layout_or_view": {"type": ["string", "null"]},
+        "layer_roles": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["layer", "role", "confidence"], "properties": {"layer": {"type": "string"}, "role": {"type": "string"}, "confidence": {"type": "string", "enum": ["observed", "inferred", "uncertain"]}}}},
+        "dimension_text_plot_notes": {"type": "array", "items": {"type": "string"}},
+        "exceptions": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "answer": {"type": "string", "minLength": 1},
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reviewer_basis"],
+      "properties": {
+        "status": {"type": "string", "enum": ["pending", "accepted", "corrected", "rejected"]},
+        "reviewer_basis": {"type": "string"},
+        "correction_summary": {"type": ["string", "null"]}
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contains_client_data", "may_leave_local_machine", "rights_checked"],
+      "properties": {
+        "contains_client_data": {"type": "boolean"},
+        "may_leave_local_machine": {"type": "boolean", "default": false},
+        "rights_checked": {"type": "boolean"},
+        "redactions": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "messages": {
+      "type": "array",
+      "description": "Optional direct mapping to common conversational SFT formats. Populate only after task/answer review.",
+      "items": {"type": "object", "additionalProperties": false, "required": ["role", "content"], "properties": {"role": {"type": "string", "enum": ["system", "user", "assistant"]}, "content": {"type": "string"}}}
+    }
+  }
+}
