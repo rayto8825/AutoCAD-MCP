@@ -162,6 +162,10 @@ system(operation="status")
 
 当前产品特征是受控的工业设计表达，不等价于完整参数化装配内核。一般化稳定边/面选择、抽壳、精确连续运动扫掠、曲面 G1/G2 分析和材质离屏渲染仍会明确报告为未支持。路线图见 [docs/ROADMAP.md](docs/ROADMAP.md)。
 
+## Agent Skills 与施工图学习
+
+仓库根目录 [`AGENTS.md`](AGENTS.md) 是 Agent 的任务路由入口；[`skills/README.md`](skills/README.md) 汇总可复用工作流。进行室内、零售等多系统施工图（平面、立面、天花、水电、家具、节点及图纸编排）时，使用 [industrial-product-design-gbt Skill](skills/industrial-product-design-gbt/SKILL.md)，并按需读取 [施工图风格参考](skills/industrial-product-design-gbt/references/ray-construction-drawing-style.md) 或 [本地微调/LoRA 语料准备指南](skills/industrial-product-design-gbt/references/cad-training-preparation.md)。原始 DWG、项目路径、提取几何和训练语料应保留在本地，不要提交到仓库。
+
 在 COM/LISP 兼容通道中，`recessed_panel`、`port_cutout_usb_a` 和
 `port_cutout_usb_c` 这类破坏性替换默认以
 `E_COMPAT_FEATURE_TRANSACTION_UNAVAILABLE` 失败关闭，因为 ActiveX 无法证明

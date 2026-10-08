@@ -221,6 +221,8 @@ You should see `backend: "file_ipc"` if AutoCAD is running, or `backend: "ezdxf"
 
 [`skills/industrial-product-design-gbt`](skills/industrial-product-design-gbt/SKILL.md) is the comprehensive variant. It adds research-source authority, human-factors evidence, form and surface review, backend routing, local reference-library indexing, and deterministic checks for document identity, 2D/3D interfaces, motion states, render viewsets, and revision-bound handoff manifests. Its personal library manifest is intentionally ignored; generate one locally from the included portable schema.
 
+For architectural, retail/interior, or other multi-system construction drawings, see the agent routing entry [`AGENTS.md`](AGENTS.md), the [skills index](skills/README.md), and the [observed construction drawing style](skills/industrial-product-design-gbt/references/ray-construction-drawing-style.md). The same skill includes a [local CAD fine-tuning/LoRA preparation workflow](skills/industrial-product-design-gbt/references/cad-training-preparation.md). Raw drawings, private paths, derived geometry, and training corpora must remain local unless explicitly cleared for publication.
+
 ## Tools
 
 ### `drawing` — File/drawing management
