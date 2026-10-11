@@ -775,6 +775,8 @@ async def drawing(
             data.get("dpi", 150),
             data.get("force", True),
             data.get("background", "white"),
+            plot_type=data.get("plot_type", "extents"),
+            plot_window=data.get("plot_window"),
             visual_style=data.get("visual_style"),
             preserve_visual_style=bool(data.get("preserve_visual_style", True)),
         )

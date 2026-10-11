@@ -343,6 +343,7 @@ class AutoCADBackend(ABC):
         framing_fill: float = 0.82,
         visual_style: str | None = None,
         preserve_visual_style: bool = True,
+        plot_window: list[float] | None = None,
     ) -> CommandResult:
         return CommandResult(ok=False, error="Not supported on this backend")
 

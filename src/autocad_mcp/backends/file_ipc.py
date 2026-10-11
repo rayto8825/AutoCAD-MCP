@@ -1824,12 +1824,13 @@ class FileIPCBackend(AutoCADBackend):
                     return self._autocad_crashed_result(crash, command)
                 if result_file.exists():
                     try:
-                        # AutoCAD LISP writes files in Windows-1252 encoding;
-                        # try UTF-8 first (covers ASCII), fall back to cp1252
                         try:
                             text = result_file.read_text(encoding="utf-8")
                         except UnicodeDecodeError:
-                            text = result_file.read_text(encoding="cp1252")
+                            try:
+                                text = result_file.read_text(encoding="gbk")
+                            except UnicodeDecodeError:
+                                text = result_file.read_text(encoding="cp1252")
                         data = json.loads(text)
                         # Verify request_id matches
                         if data.get("request_id") == request_id:
@@ -3081,6 +3082,7 @@ class FileIPCBackend(AutoCADBackend):
         framing_fill=0.82,
         visual_style=None,
         preserve_visual_style=True,
+        plot_window=None,
     ) -> CommandResult:
         output = Path(path).expanduser().resolve()
         if output.suffix.lower() != ".png":
@@ -3139,6 +3141,7 @@ class FileIPCBackend(AutoCADBackend):
                 "plot_style": plot_style,
                 "dpi": int(dpi),
                 "plot_type": plot_type,
+                "plot_window": plot_window,
                 "normalize_framing": normalize_framing,
                 "framing_fill": framing_fill,
             }
@@ -3319,6 +3322,7 @@ class FileIPCBackend(AutoCADBackend):
         self, output: Path, *, paper: str, orientation: str, plot_style: str,
         dpi: int, plot_type: str = "extents", normalize_framing: bool = False,
         framing_fill: float = 0.82, visual_style: str | None = None,
+        plot_window: list[float] | None = None,
     ) -> dict:
         import pythoncom
         import win32com.client
@@ -3328,6 +3332,13 @@ class FileIPCBackend(AutoCADBackend):
         document = application.ActiveDocument
         layout = document.ActiveLayout
         device = "PublishToWeb PNG.pc3"
+        try:
+            saved_lower = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, None)
+            saved_upper = win32com.client.VARIANT(pythoncom.VT_BYREF | pythoncom.VT_VARIANT, None)
+            layout.GetWindowToPlot(saved_lower, saved_upper)
+            saved_window = (saved_lower.value, saved_upper.value)
+        except Exception:
+            saved_window = None
         saved = {}
         for name in (
             "ConfigName", "CanonicalMediaName", "PaperUnits", "PlotType",
@@ -3383,13 +3394,31 @@ class FileIPCBackend(AutoCADBackend):
             _, media, _, _ = min(candidates, key=lambda item: item[0])
             layout.CanonicalMediaName = media
             selected_plot_type = str(plot_type).lower()
-            if selected_plot_type not in {"extents", "display"}:
-                raise ValueError("plot_type must be extents or display")
-            layout.PlotType = 0 if selected_plot_type == "display" else 1
+            if selected_plot_type not in {"extents", "display", "window"}:
+                raise ValueError("plot_type must be extents, display or window")
+            if selected_plot_type == "window":
+                if not plot_window or len(plot_window) != 4:
+                    raise ValueError("window plotting requires plot_window=[x1,y1,x2,y2]")
+                x1, y1, x2, y2 = map(float, plot_window)
+                if not all(math.isfinite(value) for value in (x1, y1, x2, y2)) or x2 <= x1 or y2 <= y1:
+                    raise ValueError("plot_window must contain finite increasing coordinates")
+                lower_dcs = document.Utility.TranslateCoordinates(
+                    win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, [x1, y1, 0.0]),
+                    0, 2, False,
+                )
+                upper_dcs = document.Utility.TranslateCoordinates(
+                    win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, [x2, y2, 0.0]),
+                    0, 2, False,
+                )
+                layout.SetWindowToPlot(
+                    win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, lower_dcs[:2]),
+                    win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, upper_dcs[:2]),
+                )
+            layout.PlotType = {"display": 0, "extents": 1, "window": 4}[selected_plot_type]
             layout.UseStandardScale = True
             layout.StandardScale = 0
             layout.CenterPlot = True
-            layout.PlotRotation = 1 if selected_orientation == "landscape" else 0
+            layout.PlotRotation = 0
             if plot_style:
                 try:
                     layout.StyleSheet = plot_style
@@ -3434,6 +3463,8 @@ class FileIPCBackend(AutoCADBackend):
                 "sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
                 "device": device,
                 "plot_type": selected_plot_type,
+                "plot_window": list(plot_window) if selected_plot_type == "window" else None,
+                "plot_window_dcs": [*lower_dcs[:2], *upper_dcs[:2]] if selected_plot_type == "window" else None,
                 "framing_normalization": framing_normalization,
                 "visual_style": visual_style,
                 "shaded_display_requested": visual_style is not None,
@@ -3441,6 +3472,14 @@ class FileIPCBackend(AutoCADBackend):
                 "render_truth": "native_plot_style_readback_only",
             }
         finally:
+            if saved_window is not None:
+                try:
+                    layout.SetWindowToPlot(
+                        win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, saved_window[0]),
+                        win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, saved_window[1]),
+                    )
+                except Exception:
+                    pass
             for name, value in saved.items():
                 try:
                     setattr(layout, name, value)

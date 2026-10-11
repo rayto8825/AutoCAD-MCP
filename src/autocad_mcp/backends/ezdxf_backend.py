@@ -180,7 +180,10 @@ class EzdxfBackend(AutoCADBackend):
         framing_fill=0.82,
         visual_style=None,
         preserve_visual_style=True,
+        plot_window=None,
     ) -> CommandResult:
+        if plot_window is not None:
+            return CommandResult(ok=False, error="Window plotting requires the file_ipc backend")
         if visual_style is not None:
             return CommandResult(
                 ok=False,
