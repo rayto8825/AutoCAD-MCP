@@ -3574,6 +3574,17 @@ class FileIPCBackend(AutoCADBackend):
             )
 
     async def drawing_open(self, path: str) -> CommandResult:
+        if self._native_client is None:
+            result = await self._drawing_open_com(path)
+            if not result.ok:
+                return result
+            dispatcher = Path(os.environ.get("AUTOCAD_MCP_LISP_PATH", "") or (LISP_DIR / "mcp_dispatch.lsp"))
+            self._type_command(f'(load "{str(dispatcher.resolve()).replace(chr(92), "/")}")')
+            self._wait_for_autocad_idle(timeout=10.0)
+            ping = await self._dispatch("ping", {})
+            if not ping.ok:
+                return ping
+            return result
         result = await self._dispatch("drawing-open", {"path": path})
         if result.ok:
             self._audit_revision = 0
@@ -3588,6 +3599,34 @@ class FileIPCBackend(AutoCADBackend):
                     }
                 )
         return result
+
+    @sta_async_method("drawing.open", timeout=DOCUMENT_TIMEOUT + 10.0)
+    async def _drawing_open_com(self, path: str) -> CommandResult:
+        try:
+            requested = Path(path).expanduser().resolve()
+            if not requested.is_file():
+                raise FileNotFoundError(str(requested))
+            application = self._get_autocad_application()
+            document = application.Documents.Open(str(requested), True)
+            document.Activate()
+            actual = str(application.ActiveDocument.FullName)
+            if os.path.normcase(str(Path(actual).resolve())) != os.path.normcase(str(requested)):
+                raise RuntimeError(f"AutoCAD opened {actual} instead of {requested}")
+            context = self._bind_document(document)
+            self._audit_revision = 0
+            self._audit_fingerprints = None
+            return CommandResult(
+                ok=True,
+                payload={**context, "requested_path": str(requested), "actual_path": actual, "read_only": True, "diff": []},
+            )
+        except Exception as exc:
+            return self._exception_result(
+                exc,
+                operation="drawing.open",
+                parameters={"path": path},
+                system_call="AutoCAD.Documents.Open/Document.Activate",
+                file_path=path,
+            )
 
     @sta_sync_method("drawing.save", timeout=60.0)
     def _save_via_com(self, path: str | None, file_type: int | None = None) -> dict:
